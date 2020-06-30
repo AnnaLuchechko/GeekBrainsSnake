@@ -19,6 +19,8 @@ struct CollisionCategories {
 class GameScene: SKScene {
     private let counterClockWiseButtonName = "counterClockwiseButton"
     private let clockWiseButtonName = "clockwiseButton"
+    private let restartButtonName = "restartGameButton"
+    private let restartButtonLabel = "Restart?"
     private var snake: Snake!
     
     override func didMove(to view: SKView) {
@@ -29,15 +31,7 @@ class GameScene: SKScene {
         physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
         physicsBody?.allowsRotation = false
         
-        let counterClockwisePosition = CGPoint(x: frame.minX + 30, y: frame.minY + 30)
-        let clockwisePosition = CGPoint(x: frame.maxX - 80, y: frame.minY + 30)
-        
-        addRotationButton(name: counterClockWiseButtonName, position: counterClockwisePosition)
-        addRotationButton(name: clockWiseButtonName, position: clockwisePosition)
-        
-        snake = Snake(position: CGPoint(x: frame.midX, y: frame.midY))
-        addChild(snake)
-        createApple()
+        initGameObjects()
         
         physicsWorld.contactDelegate = self
         
@@ -66,20 +60,49 @@ class GameScene: SKScene {
         addChild(button)
     }
     
+    private func initGameObjects() {
+        let counterClockwisePosition = CGPoint(x: frame.minX + 30, y: frame.minY + 30)
+        let clockwisePosition = CGPoint(x: frame.maxX - 80, y: frame.minY + 30)
+
+        addRotationButton(name: counterClockWiseButtonName, position: counterClockwisePosition)
+        addRotationButton(name: clockWiseButtonName, position: clockwisePosition)
+
+        snake = Snake(position: CGPoint(x: frame.midX, y: frame.midY))
+        addChild(snake)
+        createApple()
+    }
+    
+    private func addRestartButton(name: String, position: CGPoint) {
+        let restartButton = SKLabelNode()
+        
+        restartButton.position = position
+        restartButton.text = restartButtonLabel
+        restartButton.color = .white
+        restartButton.name = name
+        
+        addChild(restartButton)
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         for touch in touches {
             let touchLocation = touch.location(in: self)
             
-            guard let touchedNode = atPoint(touchLocation) as? SKShapeNode else { continue }
-            
-            if touchedNode.name == clockWiseButtonName {
-                touchedNode.fillColor = .green
-                snake.moveClockWise()
-            }
-            else if touchedNode.name == counterClockWiseButtonName {
-                touchedNode.fillColor = .green
-                snake.moveCounterClockWise()
+            if let touchedNode = atPoint(touchLocation) as? SKShapeNode {
+                if touchedNode.name == clockWiseButtonName {
+                    touchedNode.fillColor = .green
+                    snake.moveClockWise()
+                }
+                else if touchedNode.name == counterClockWiseButtonName {
+                    touchedNode.fillColor = .green
+                    snake.moveCounterClockWise()
+                }
+            } else if let touchedNode = atPoint(touchLocation) as? SKLabelNode {
+
+                if touchedNode.name == restartButtonName {
+                    touchedNode.removeFromParent()
+                    initGameObjects()
+                }
             }
         }
     }
@@ -121,6 +144,9 @@ extension GameScene: SKPhysicsContactDelegate {
             snake.addBodyPart()
             apple?.removeFromParent()
             createApple()
+        case CollisionCategories.EdgeBody:
+            scene?.removeAllChildren()
+            addRestartButton(name: restartButtonName, position: CGPoint(x: frame.midX, y: frame.midY))
         default:
             break
         }
